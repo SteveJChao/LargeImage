@@ -76,7 +76,9 @@ Hook临界值(不设置的话会使用默认的计算缩放最小倍数和最大
          */
         float getMaxScale(LargeImageView largeImageView, int imageWidth, int imageHeight, float suggestMaxScale);
 
-    }
+
+
+}
 
 例如
 
@@ -127,7 +129,61 @@ Hook临界值(不设置的话会使用默认的计算缩放最小倍数和最大
             }
         });
 
+## 在线图片的加载，原作者示例的下载再加载文件。在项目中我使用直接从HTTPConnection中读取流，然后decode为bitmap,然后加载bitmap。大致代码如下
 
+	public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.image_item, container, false);
+
+        final LargeImageView imageView = view.findViewById(R.id.image_view_tuijian);
+
+        class MHandler extends Handler {
+            @Override
+            public void handleMessage(Message msg) {
+                imageView.setImage(mBitmap);
+            }
+        }
+
+        final MHandler mHandler = new MHandler();
+        new Thread() {
+            @Override
+            public void run() {
+                mBitmap = getHttpBitmap(imageURL);
+                mHandler.sendEmptyMessage(123);
+            }
+        }.start();
+
+
+        return view;
+    }
+	
+	public static Bitmap getHttpBitmap(String url){
+		URL myFileURL;
+		Bitmap bitmap=null;
+		try{
+		    myFileURL = new URL(url);
+		    //获得连接
+		    HttpURLConnection conn=(HttpURLConnection)myFileURL.openConnection();
+		    //设置超时时间为6000毫秒，conn.setConnectionTiem(0);表示没有时间限制
+		    conn.setConnectTimeout(6000);
+		    //连接设置获得数据流
+		    conn.setDoInput(true);
+		    //不使用缓存
+		    conn.setUseCaches(false);
+		    //这句可有可无，没有影响
+		    //conn.connect();
+		    //得到数据流
+		    InputStream is = conn.getInputStream();
+		    //解析得到图片
+		    bitmap = BitmapFactory.decodeStream(is);
+		    //关闭数据流
+		    is.close();
+		}catch(Exception e){
+		    e.printStackTrace();
+		}
+
+		return bitmap;
+
+	    }
 # 实现原理
 
 只加载显示的区域的图片，切成小块拼接.  
